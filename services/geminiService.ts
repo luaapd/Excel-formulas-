@@ -2,11 +2,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { FormulaResponse } from '../types';
 
-if (!process.env.API_KEY) {
-  throw new Error("API_KEY environment variable not set");
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getApiKey = (): string | null => {
+  return localStorage.getItem('gemini_api_key');
+};
 
 const formulaSchema = {
   type: Type.OBJECT,
@@ -25,6 +23,13 @@ const formulaSchema = {
 
 
 export const generateFormula = async (prompt: string): Promise<FormulaResponse> => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error("API key not found. Please set your API key.");
+  }
+  
+  const ai = new GoogleGenAI({ apiKey });
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -51,8 +56,13 @@ export const generateFormula = async (prompt: string): Promise<FormulaResponse> 
 
   } catch (error) {
     console.error("Error generating formula:", error);
-    if (error instanceof Error && error.message.includes('json')) {
-         throw new Error("Failed to parse the response from the AI. Please try again.");
+    if (error instanceof Error) {
+        if (error.message.includes('API key not valid')) {
+            throw new Error("Your API key is not valid. Please check and re-enter it.");
+        }
+        if (error.message.includes('json')) {
+            throw new Error("Failed to parse the response from the AI. Please try again.");
+        }
     }
     throw new Error("An error occurred while communicating with the AI. Please check your connection and try again.");
   }

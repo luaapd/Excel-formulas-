@@ -1,9 +1,10 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { generateFormula } from './services/geminiService';
 import type { FormulaResponse } from './types';
-import { FormulaIcon, LightbulbIcon, SparklesIcon, CopyIcon, CheckIcon, AlertTriangleIcon } from './components/Icons';
+import { FormulaIcon, LightbulbIcon, SparklesIcon, CopyIcon, CheckIcon, AlertTriangleIcon, KeyIcon } from './components/Icons';
 import LoadingSkeleton from './components/LoadingSkeleton';
+import { ApiKeyModal } from './components/ApiKeyModal';
 
 const examplePrompts = [
   "Sum values in column A if column B is 'Sales'",
@@ -18,6 +19,23 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    const storedKey = localStorage.getItem('gemini_api_key');
+    if (storedKey) {
+      setApiKey(storedKey);
+    } else {
+      setShowApiKeyModal(true);
+    }
+  }, []);
+  
+  const handleSaveApiKey = (key: string) => {
+    localStorage.setItem('gemini_api_key', key);
+    setApiKey(key);
+    setShowApiKeyModal(false);
+  };
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim() || isLoading) return;
@@ -31,7 +49,11 @@ const App: React.FC = () => {
       const generatedResult = await generateFormula(prompt);
       setResult(generatedResult);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      setError(errorMessage);
+      if (errorMessage.toLowerCase().includes('api key')) {
+        setTimeout(() => setShowApiKeyModal(true), 500);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -50,6 +72,10 @@ const App: React.FC = () => {
     setResult(null);
     setError(null);
   };
+
+  if (!apiKey || showApiKeyModal) {
+    return <ApiKeyModal onSave={handleSaveApiKey} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white font-sans flex flex-col items-center p-4 sm:p-6">
@@ -161,6 +187,16 @@ const App: React.FC = () => {
             </div>
           )}
         </main>
+        <footer className="text-center mt-8 pb-4">
+          <button 
+            onClick={() => setShowApiKeyModal(true)}
+            className="text-gray-500 hover:text-gray-400 text-sm flex items-center gap-2 mx-auto transition-colors"
+            aria-label="Change API Key"
+          >
+            <KeyIcon className="w-4 h-4" />
+            Change API Key
+          </button>
+        </footer>
       </div>
     </div>
   );
