@@ -3,6 +3,7 @@ import React, { useState, useCallback } from 'react';
 import { generateFormula } from './services/geminiService';
 import type { FormulaResponse } from './types';
 import { FormulaIcon, LightbulbIcon, SparklesIcon, CopyIcon, CheckIcon, AlertTriangleIcon } from './components/Icons';
+import LoadingSkeleton from './components/LoadingSkeleton';
 
 const examplePrompts = [
   "Sum values in column A if column B is 'Sales'",
@@ -99,25 +100,29 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          <div className="mt-6">
-            <h3 className="text-md font-semibold text-gray-400 flex items-center gap-2 mb-3">
-              <LightbulbIcon className="w-5 h-5 text-yellow-400" />
-              Not sure where to start? Try an example:
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {examplePrompts.map((example, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleExampleClick(example)}
-                  className="text-left text-sm text-gray-300 bg-gray-800/60 p-3 rounded-lg hover:bg-gray-700/80 transition-colors duration-200 border border-gray-700"
-                >
-                  {example}
-                </button>
-              ))}
+          {!isLoading && (
+            <div className="mt-6">
+              <h3 className="text-md font-semibold text-gray-400 flex items-center gap-2 mb-3">
+                <LightbulbIcon className="w-5 h-5 text-yellow-400" />
+                Not sure where to start? Try an example:
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {examplePrompts.map((example, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleExampleClick(example)}
+                    className="text-left text-sm text-gray-300 bg-gray-800/60 p-3 rounded-lg hover:bg-gray-700/80 transition-colors duration-200 border border-gray-700"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           
-          {error && (
+          {isLoading && <LoadingSkeleton />}
+
+          {!isLoading && error && (
             <div className="mt-8 bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg flex items-center gap-3">
                 <AlertTriangleIcon className="w-6 h-6"/>
                 <div>
@@ -127,7 +132,7 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {result && !error && (
+          {!isLoading && result && !error && (
             <div className="mt-8 bg-gray-800/50 rounded-2xl shadow-lg backdrop-blur-sm border border-gray-700 overflow-hidden">
               <div className="p-6">
                 <h2 className="text-2xl font-bold text-gray-100 mb-4">Generated Formula</h2>
